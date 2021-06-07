@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 
-public class ModelUnitWeather implements  WeatherModel{
+public class ModelUnitWeather implements WeatherModel {
 
     private static final String PROTOCOL = "http";
     private static final String BASE_HOST = "dataservice.accuweather.com";
@@ -30,7 +30,7 @@ public class ModelUnitWeather implements  WeatherModel{
     static OkHttpClient okHttpClient = new OkHttpClient();
     static ObjectMapper objectMapper = new ObjectMapper();
 
-    public  void getWeather(String selectedCity, Period period, String locationName) throws IOException {
+    public void getWeather(String selectedCity, Period period, String locationName) throws IOException {
         //http://dataservice.accuweather.com/forecasts/v1/daily/5day/{locationKey} 295212
 
         switch (period) {
@@ -58,7 +58,7 @@ public class ModelUnitWeather implements  WeatherModel{
                 String responceForecast = response.body().string();
                 ArrayList<DayForecast> dayForecastArrayList = new ArrayList<DayForecast>();
 
-                for(int i=0;i<5;i++) {
+                for (int i = 0; i < 5; i++) {
                     String responseDate = objectMapper.readTree(responceForecast).at("/DailyForecasts").get(i)
                             .at("/Date").asText();
                     int responseTemperatureMinimum = objectMapper.readTree(responceForecast).at("/DailyForecasts").get(i)
