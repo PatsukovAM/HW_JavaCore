@@ -73,7 +73,8 @@ public class DayForecast {
                 "\nна " + date +
                 "\nтемпература ночью " + temperatureMinimum +
                 "\nтемпература днем " + temperatureMaximum +
-                "\nднем " + dayWeather +
-                "\nночью " + nighWeather + "\n";
+                "\nночью " + nighWeather+
+                "\nднем " + dayWeather + "\n";
+
     }
 }

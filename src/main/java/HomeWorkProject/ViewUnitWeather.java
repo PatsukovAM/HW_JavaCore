@@ -3,9 +3,10 @@ package HomeWorkProject;
 import javafx.util.Pair;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Scanner;
 
-import static HomeWorkProject.ModelUnitWeather.getLocationKey;
+
 
 public class ViewUnitWeather {
     private ControllerUnit controller = new ControllerUnit();
@@ -19,15 +20,18 @@ public class ViewUnitWeather {
         String locationName;
         String command;
 
+        System.out.println("Текущая дата "+ LocalDateTime.now());
+
         while (true) {
 
             System.out.println("Введите название города/населенного пункта");
             while (true) {
                 String city = scanner.nextLine();
                 try {
-                    responseCityResult = getLocationKey(city);
+                    responseCityResult = controller.getLocationKey(city);
                 } catch (IOException e) {
-                    throw new TypeErrorExeptions();
+                    e.printStackTrace();
+                    continue;
                 }
 
                 locationKey = responseCityResult.getKey();

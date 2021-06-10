@@ -25,5 +25,8 @@ public class ControllerUnit {
                 weatherModel.getWeather(userSelectedCity, Period.FIVE_DAYS, locationName);
         }
     }
+    public Pair<String, String> getLocationKey(String city) throws TypeErrorExeptions, IOException{
+        return weatherModel.getLocationKey(city);
+    };
 
 }

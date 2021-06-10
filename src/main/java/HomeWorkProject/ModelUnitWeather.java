@@ -61,6 +61,7 @@ public class ModelUnitWeather implements WeatherModel {
                 for (int i = 0; i < 5; i++) {
                     String responseDate = objectMapper.readTree(responceForecast).at("/DailyForecasts").get(i)
                             .at("/Date").asText();
+                    responseDate=responseDate.substring(0,10).replace("-",".");
                     int responseTemperatureMinimum = objectMapper.readTree(responceForecast).at("/DailyForecasts").get(i)
                             .at("/Temperature/Minimum/Value").asInt();
                     int responseTemperatureMaximum = objectMapper.readTree(responceForecast).at("/DailyForecasts").get(i)
@@ -72,6 +73,10 @@ public class ModelUnitWeather implements WeatherModel {
 
                     dayForecastArrayList.add(new DayForecast(locationName, responseDate, responseTemperatureMinimum,
                             responseTemperatureMaximum, responseDayWeather, responseNighWeather));
+
+                    DBRepository dbRepository= new DBRepository();
+                    dbRepository.saveForecast(dayForecastArrayList.get(i));
+
                 }
 
                 System.out.println(dayForecastArrayList);
@@ -107,7 +112,7 @@ public class ModelUnitWeather implements WeatherModel {
         }
     }
 
-    public static Pair<String, String> getLocationKey(String city) throws IOException {
+    public  Pair<String, String> getLocationKey(String city) throws TypeErrorExeptions, IOException {
         //http://dataservice.accuweather.com/locations/v1/cities/autocomplete
         HttpUrl httpUrl = new HttpUrl.Builder()
                 .scheme(PROTOCOL)
@@ -127,9 +132,16 @@ public class ModelUnitWeather implements WeatherModel {
 
         Response response = okHttpClient.newCall(request).execute();
         String responceBody = response.body().string();
-        String locationKey = objectMapper.readTree(responceBody).get(0).at("/Key").asText();
-        String locationName = objectMapper.readTree(responceBody).get(0).at("/LocalizedName").asText();
 
-        return new Pair<>(locationKey, locationName);
+        try {
+            String locationKey = objectMapper.readTree(responceBody).get(0).at("/Key").asText();
+            String locationName = objectMapper.readTree(responceBody).get(0).at("/LocalizedName").asText();
+            return new Pair<>(locationKey, locationName);
+        } catch (NullPointerException e) {
+            throw new TypeErrorExeptions();
+        }
+
+
+
     }
 }
