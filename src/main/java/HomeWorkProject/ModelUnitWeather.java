@@ -10,7 +10,10 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 import java.io.IOException;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 
 public class ModelUnitWeather implements WeatherModel {
@@ -20,7 +23,6 @@ public class ModelUnitWeather implements WeatherModel {
     private static final String VERSION = "v1";
     private static final String LENGHT = "daily";
     private static final String SPAN5 = "5day";
-    private static final String SPAN1 = "1day";
     private static final String LOCATIOMS = "locations";
     private static final String CITIES = "cities";
     private static final String AUTOCOMPLITE = "autocomplete";
@@ -30,7 +32,13 @@ public class ModelUnitWeather implements WeatherModel {
     static OkHttpClient okHttpClient = new OkHttpClient();
     static ObjectMapper objectMapper = new ObjectMapper();
 
-    public void getWeather(String selectedCity, Period period, String locationName) throws IOException {
+    SimpleDateFormat myFormatDate = new SimpleDateFormat("yyyy.MM.dd");
+    Date currentDate = new Date();
+    String currentDateString = myFormatDate.format(currentDate);
+
+    private DBRepository preCheck = new DBRepository();
+
+    public void getWeather(String selectedCity, Period period, String locationName) throws IOException, SQLException {
         //http://dataservice.accuweather.com/forecasts/v1/daily/5day/{locationKey} 295212
 
         switch (period) {
@@ -61,7 +69,7 @@ public class ModelUnitWeather implements WeatherModel {
                 for (int i = 0; i < 5; i++) {
                     String responseDate = objectMapper.readTree(responceForecast).at("/DailyForecasts").get(i)
                             .at("/Date").asText();
-                    responseDate=responseDate.substring(0,10).replace("-",".");
+                    responseDate = responseDate.substring(0, 10).replace("-", ".");
                     int responseTemperatureMinimum = objectMapper.readTree(responceForecast).at("/DailyForecasts").get(i)
                             .at("/Temperature/Minimum/Value").asInt();
                     int responseTemperatureMaximum = objectMapper.readTree(responceForecast).at("/DailyForecasts").get(i)
@@ -74,9 +82,11 @@ public class ModelUnitWeather implements WeatherModel {
                     dayForecastArrayList.add(new DayForecast(locationName, responseDate, responseTemperatureMinimum,
                             responseTemperatureMaximum, responseDayWeather, responseNighWeather));
 
-                    DBRepository dbRepository= new DBRepository();
-                    dbRepository.saveForecast(dayForecastArrayList.get(i));
+                    DBRepository dbRepository = new DBRepository();
 
+                    if (dbRepository.preRecordCheck(locationName, currentDateString, 1)) {
+                        dbRepository.saveForecast(dayForecastArrayList.get(i));
+                    }
                 }
 
                 System.out.println(dayForecastArrayList);
@@ -84,35 +94,37 @@ public class ModelUnitWeather implements WeatherModel {
             }
             //http://dataservice.accuweather.com/currentconditions/v1/{locationKey}
             case NOW: {
-                currentConditions = "currentconditions";
-                HttpUrl httpUrl = new HttpUrl.Builder()
-                        .scheme(PROTOCOL)
-                        .host(BASE_HOST)
-                        .addPathSegments(currentConditions)
-                        .addPathSegments(VERSION)
-                        .addPathSegments(selectedCity) // .addPathSegments(getLocationKey(selectedCity))
-                        .addQueryParameter("apikey", API_KEY)
-                        .addQueryParameter("language", "ru")
-                        .addQueryParameter("details", "false")
-                        .addQueryParameter("metric", "true")
-                        .build();
+                if (preCheck.preRecordCheck(locationName, currentDateString, 0)) {
+                    currentConditions = "currentconditions";
+                    HttpUrl httpUrl = new HttpUrl.Builder()
+                            .scheme(PROTOCOL)
+                            .host(BASE_HOST)
+                            .addPathSegments(currentConditions)
+                            .addPathSegments(VERSION)
+                            .addPathSegments(selectedCity) // .addPathSegments(getLocationKey(selectedCity))
+                            .addQueryParameter("apikey", API_KEY)
+                            .addQueryParameter("language", "ru")
+                            .addQueryParameter("details", "false")
+                            .addQueryParameter("metric", "true")
+                            .build();
 
-                Request request = new Request.Builder()
-                        .url(httpUrl)
-                        .build();
+                    Request request = new Request.Builder()
+                            .url(httpUrl)
+                            .build();
 
-                Response response = okHttpClient.newCall(request).execute();
-                String responceForecast = response.body().string();
-                String responseWetherText = objectMapper.readTree(responceForecast).get(0).at("/WeatherText").asText();
-                int responseTemperature = objectMapper.readTree(responceForecast).get(0).at("/Temperature/Metric/Value").asInt();
-                NowForecast nowForecast = new NowForecast(locationName, responseWetherText, responseTemperature);
-                System.out.println(nowForecast);
-                break;
+                    Response response = okHttpClient.newCall(request).execute();
+                    String responceForecast = response.body().string();
+                    String responseWetherText = objectMapper.readTree(responceForecast).get(0).at("/WeatherText").asText();
+                    int responseTemperature = objectMapper.readTree(responceForecast).get(0).at("/Temperature/Metric/Value").asInt();
+                    NowForecast nowForecast = new NowForecast(locationName, responseWetherText, responseTemperature);
+                    System.out.println(nowForecast);
+                    break;
+                }
             }
         }
     }
 
-    public  Pair<String, String> getLocationKey(String city) throws TypeErrorExeptions, IOException {
+    public Pair<String, String> getLocationKey(String city) throws TypeErrorExeptions, IOException {
         //http://dataservice.accuweather.com/locations/v1/cities/autocomplete
         HttpUrl httpUrl = new HttpUrl.Builder()
                 .scheme(PROTOCOL)
@@ -140,7 +152,6 @@ public class ModelUnitWeather implements WeatherModel {
         } catch (NullPointerException e) {
             throw new TypeErrorExeptions();
         }
-
 
 
     }
